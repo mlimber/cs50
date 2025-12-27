@@ -1,7 +1,11 @@
 import csv
 import sys
+import logging
 
-from util import Node, StackFrontier, QueueFrontier
+from util import Node, Frontier, QueueFrontier
+
+
+_log = logging.Logger("Degrees")
 
 # Maps names to a set of corresponding person_ids
 names = {}
@@ -84,6 +88,14 @@ def main():
             print(f"{i + 1}: {person1} and {person2} starred in {movie}")
 
 
+def trace_back(target_node: Node, explored: Frontier):
+    trace = []
+    while target_node.parent:
+        trace.append((target_node.action, target_node.state))
+        target_node = explored.get_node(target_node.parent)
+    return trace[::-1]  # Reversed
+
+
 def shortest_path(source, target):
     """
     Returns the shortest list of (movie_id, person_id) pairs
@@ -92,8 +104,26 @@ def shortest_path(source, target):
     If no possible path, returns None.
     """
 
-    # TODO
-    raise NotImplementedError
+    frontier = QueueFrontier()
+    frontier.add(Node(state=source, parent=None, action=None))
+
+    explored = Frontier()
+
+    while True:
+        if frontier.empty():
+            return None
+        curr_node = frontier.remove()
+        person = curr_node.state
+        explored.add(curr_node)
+        neighbors = neighbors_for_person(person)
+        for movie_id, neighbor in neighbors:
+            if explored.contains_state(neighbor) or frontier.contains_state(neighbor):
+                continue
+            neighbor_node = Node(state=neighbor, parent=person, action=movie_id)
+            if neighbor == target:
+                return trace_back(neighbor_node, explored)
+            explored.add(neighbor_node)
+            frontier.add(Node(state=neighbor, parent=person, action=movie_id))
 
 
 def person_id_for_name(name):
