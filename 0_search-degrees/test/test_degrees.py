@@ -36,19 +36,7 @@ def test_emma(small):
 
 def test_self(small):
     for person in [small.ew, small.tc, small.th, small.vg, small.kb, small.ce]:
-        assert deg.shortest_path(person, person) is None
-
-
-def test_cruise_to_hanks(small):
-    path = deg.shortest_path(small.tc, small.th)
-
-    assert len(path) == 2
-
-    assert deg.movies[path[0][MOVIE]]["title"] == "A Few Good Men"
-    assert deg.people[path[0][PERSON]]["name"] == KB
-
-    assert deg.movies[path[1][MOVIE]]["title"] == "Apollo 13"
-    assert deg.people[path[1][PERSON]]["name"] == TH
+        assert 0 == len(deg.shortest_path(person, person))
 
 
 def test_cruise_to_hanks(small):
@@ -66,7 +54,13 @@ def test_cruise_to_hanks(small):
 def test_golino_to_elwes(small):
     path = deg.shortest_path(small.vg, small.ce)
 
-    # assert len(path) == 6
+    assert len(path) == 5
 
-    for p in path:
-        print(deg.movies[p[MOVIE]]["title"], deg.people[p[PERSON]]["name"])
+
+def test_hanks_to_bacon(small):
+    path = deg.shortest_path(small.th, small.kb)
+
+    assert len(path) == 1
+
+    assert deg.movies[path[0][MOVIE]]["title"] == "Apollo 13"
+    assert deg.people[path[0][PERSON]]["name"] == KB
