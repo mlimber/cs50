@@ -104,6 +104,12 @@ class Sentence():
     def __str__(self):
         return f"{self.cells} = {self.count}"
 
+    def __repr__(self):
+        return self.__str__()
+
+    def __hash__(self):
+        return hash((frozenset(self.cells), self.count))
+
     def __lt__(self, other):
         return self.cells.issubset(other.cells) and self.cells != other.cells
 
@@ -186,13 +192,13 @@ class MinesweeperAI():
     def remove_known_cells(self, cells: Set[Cell], count: int) -> Sentence:
         cells_mines = cells.intersection(self.mines)
         cells_safe = cells.intersection(self.safes)
-        cells -= cells_mines | cells_safe
+        cells_new = cells - (cells_mines | cells_safe)
         count -= len(cells_mines)
-        return Sentence(cells, count)
+        return Sentence(cells_new, count)
 
     def incorporate_sentence(self, sentence: Sentence) -> bool:
         num_cells = len(sentence.cells)
-        if num_cells == 0 or sentence in self.knowledge:
+        if num_cells == 0:
             return False
         if num_cells == sentence.count:
             for cell in sentence.cells:
@@ -200,7 +206,7 @@ class MinesweeperAI():
         elif 0 == sentence.count:
             for cell in sentence.cells:
                 self.mark_safe(cell)
-        else:
+        elif sentence not in self.knowledge:
             self.knowledge.append(sentence)
         return True
 
@@ -212,10 +218,26 @@ class MinesweeperAI():
                     sythesized_sentences.append(s2 - s1)
                 elif s2 < s1:
                     sythesized_sentences.append(s1 - s2)
+
+            # Reduce sentences before adding
+            incorporated_new = []
+            for s in sythesized_sentences:
+                reduced_sentence = self.remove_known_cells(s.cells, s.count)
+                if reduced_sentence.cells:
+                    incorporated_new.append(self.incorporate_sentence(reduced_sentence))
+
+            # Add to knowledge, cleaning out empties and dupes
+            self.knowledge = list(set([s for s in self.knowledge if s.cells]))
+
             # New info means we should make another pass; otherwise, reduction complete
-            incorporated = [self.incorporate_sentence(s) for s in sythesized_sentences]
-            if not any(incorporated):
+            if not any(incorporated_new):
                 break
+
+        # Reincorporate all knowledge to take account of reduced sentences (e.g., (i,j)=0)
+        saved_knowledge = self.knowledge
+        self.knowledge = []
+        for sentence in saved_knowledge:
+            self.incorporate_sentence(sentence)
 
     def add_knowledge(self, cell: Cell, count: int):
         """

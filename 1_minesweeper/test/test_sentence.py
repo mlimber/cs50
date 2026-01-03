@@ -149,6 +149,179 @@ class TestMarkMine:
 
 
 # =============================================================================
+# __lt__ (less than / subset) tests
+# =============================================================================
+
+class TestLessThan:
+    """Tests for Sentence.__lt__() - proper subset comparison."""
+
+    def test_proper_subset_is_less_than(self):
+        """A sentence with a proper subset of cells is less than the other."""
+        s1 = Sentence({(0, 0), (0, 1)}, 1)
+        s2 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        assert s1 < s2
+
+    def test_equal_sets_not_less_than(self):
+        """Equal cell sets are not less than each other."""
+        s1 = Sentence({(0, 0), (0, 1)}, 1)
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        assert not (s1 < s2)
+        assert not (s2 < s1)
+
+    def test_superset_not_less_than(self):
+        """A superset is not less than its subset."""
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        assert not (s1 < s2)
+
+    def test_disjoint_sets_not_less_than(self):
+        """Disjoint sets are not less than each other."""
+        s1 = Sentence({(0, 0), (0, 1)}, 1)
+        s2 = Sentence({(1, 0), (1, 1)}, 1)
+        assert not (s1 < s2)
+        assert not (s2 < s1)
+
+    def test_overlapping_but_not_subset(self):
+        """Overlapping sets that aren't subsets are not less than."""
+        s1 = Sentence({(0, 0), (0, 1)}, 1)
+        s2 = Sentence({(0, 1), (0, 2)}, 1)
+        assert not (s1 < s2)
+        assert not (s2 < s1)
+
+    def test_empty_set_is_subset_of_nonempty(self):
+        """Empty set is a proper subset of any non-empty set."""
+        s1 = Sentence(set(), 0)
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        assert s1 < s2
+
+    def test_empty_sets_not_less_than(self):
+        """Two empty sets are not less than each other."""
+        s1 = Sentence(set(), 0)
+        s2 = Sentence(set(), 0)
+        assert not (s1 < s2)
+
+    def test_single_cell_subset(self):
+        """Single cell subset of larger set."""
+        s1 = Sentence({(0, 0)}, 1)
+        s2 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        assert s1 < s2
+
+    def test_count_does_not_affect_comparison(self):
+        """Less than only compares cells, not counts."""
+        s1 = Sentence({(0, 0), (0, 1)}, 0)
+        s2 = Sentence({(0, 0), (0, 1), (0, 2)}, 3)
+        assert s1 < s2
+
+
+# =============================================================================
+# __sub__ (subtraction) tests
+# =============================================================================
+
+class TestSubtraction:
+    """Tests for Sentence.__sub__() - sentence subtraction."""
+
+    def test_subtract_subset(self):
+        """Subtracting a subset produces difference set and count."""
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        result = s1 - s2
+        assert result.cells == {(0, 2)}
+        assert result.count == 1
+
+    def test_subtract_empty_sentence(self):
+        """Subtracting empty sentence returns original cells and count."""
+        s1 = Sentence({(0, 0), (0, 1)}, 1)
+        s2 = Sentence(set(), 0)
+        result = s1 - s2
+        assert result.cells == {(0, 0), (0, 1)}
+        assert result.count == 1
+
+    def test_subtract_from_empty_sentence(self):
+        """Subtracting from empty sentence returns empty with negative count."""
+        s1 = Sentence(set(), 0)
+        s2 = Sentence({(0, 0)}, 1)
+        result = s1 - s2
+        assert result.cells == set()
+        assert result.count == -1
+
+    def test_subtract_equal_sentences(self):
+        """Subtracting equal sentences produces empty set with count 0."""
+        s1 = Sentence({(0, 0), (0, 1)}, 2)
+        s2 = Sentence({(0, 0), (0, 1)}, 2)
+        result = s1 - s2
+        assert result.cells == set()
+        assert result.count == 0
+
+    def test_subtract_disjoint_sets(self):
+        """Subtracting disjoint sets returns original cells."""
+        s1 = Sentence({(0, 0), (0, 1)}, 2)
+        s2 = Sentence({(1, 0), (1, 1)}, 1)
+        result = s1 - s2
+        assert result.cells == {(0, 0), (0, 1)}
+        assert result.count == 1
+
+    def test_subtract_overlapping_sets(self):
+        """Subtracting overlapping sets removes common cells."""
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        s2 = Sentence({(0, 1), (0, 2), (0, 3)}, 1)
+        result = s1 - s2
+        assert result.cells == {(0, 0)}
+        assert result.count == 1
+
+    def test_subtraction_does_not_modify_original(self):
+        """Subtraction should not modify the original sentences."""
+        cells1 = {(0, 0), (0, 1), (0, 2)}
+        cells2 = {(0, 0), (0, 1)}
+        s1 = Sentence(cells1.copy(), 2)
+        s2 = Sentence(cells2.copy(), 1)
+        _ = s1 - s2
+        assert s1.cells == cells1
+        assert s1.count == 2
+        assert s2.cells == cells2
+        assert s2.count == 1
+
+    def test_subtraction_returns_new_sentence(self):
+        """Subtraction returns a new Sentence instance."""
+        s1 = Sentence({(0, 0), (0, 1)}, 2)
+        s2 = Sentence({(0, 0)}, 1)
+        result = s1 - s2
+        assert result is not s1
+        assert result is not s2
+        assert isinstance(result, Sentence)
+
+    def test_count_difference_calculation(self):
+        """Count difference is calculated correctly."""
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 3)
+        s2 = Sentence({(0, 0)}, 1)
+        result = s1 - s2
+        assert result.count == 2  # 3 - 1
+
+    def test_subset_inference_scenario(self):
+        """Test real subset inference: if {A,B}=1 and {A,B,C}=1, then {C}=0."""
+        # Sentence 1: {A, B, C} = 1 mine
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 1)
+        # Sentence 2: {A, B} = 1 mine
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        # If s2 < s1, then s1 - s2 = {C} = 0 (C is safe)
+        assert s2 < s1
+        result = s1 - s2
+        assert result.cells == {(0, 2)}
+        assert result.count == 0
+        # This means (0,2) is safe since count is 0
+
+    def test_mine_inference_scenario(self):
+        """Test mine inference: if {A,B}=2 and {A,B,C}=2, then {C}=0."""
+        # Different scenario: {A, B, C} = 2 and {A, B} = 1
+        s1 = Sentence({(0, 0), (0, 1), (0, 2)}, 2)
+        s2 = Sentence({(0, 0), (0, 1)}, 1)
+        assert s2 < s1
+        result = s1 - s2
+        assert result.cells == {(0, 2)}
+        assert result.count == 1
+        # This means (0,2) is a mine since count equals len(cells)
+
+
+# =============================================================================
 # mark_safe() tests
 # =============================================================================
 
