@@ -14,6 +14,7 @@ TransitionModel = Dict[str, float]
 
 
 def main():
+    random.seed(4242)
     if len(sys.argv) != 2:
         sys.exit("Usage: python pagerank.py corpus")
     corpus = crawl(sys.argv[1])
@@ -71,12 +72,12 @@ def transition_model(corpus: Corpus, page: str, damping_factor: float) -> Transi
         return dict.fromkeys(corpus.keys(), 1 / len_corpus)
 
     # Set all keys to the same starting value
-    model = dict.fromkeys(corpus.keys(), (1 - damping_factor) / len_corpus)
+    likelihood = dict.fromkeys(corpus.keys(), (1 - damping_factor) / len_corpus)
 
     # For linked pages, add the extra damped value
     for link in links:
-        model[link] += damping_factor / len(links)
-    return model
+        likelihood[link] += damping_factor / len(links)
+    return likelihood
 
 
 def sample_pagerank(corpus: Corpus, damping_factor: float, n: int) -> TransitionModel:
@@ -88,7 +89,8 @@ def sample_pagerank(corpus: Corpus, damping_factor: float, n: int) -> Transition
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    ranks = dict.fromkeys(corpus.keys(), 0.0)
+    return ranks
 
 
 def iterate_pagerank(corpus: Corpus, damping_factor: float) -> TransitionModel:
